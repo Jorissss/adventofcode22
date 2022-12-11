@@ -1,33 +1,26 @@
 use std::collections::HashMap;
 use std::io::{self, BufRead};
 
-fn count_size(lines: &Vec<String>) -> HashMap<&str, u32> {
-    let mut dirsizes: HashMap<&str, u32> = HashMap::new();
+fn count_size(lines: &Vec<String>) -> HashMap<String, u32> {
+    let mut dirsizes: HashMap<String, u32> = HashMap::new();
     let mut in_dirs: Vec<&str> = vec![];
-    let mut count = 0;
     for line in lines.iter() {
         let cmd: Vec<&str> = line.split_whitespace().collect();
 
         if cmd.len() == 0 {
+            // to deal with empty lines (particularly the last line :))
             continue;
         } else if cmd[0] == "$" && cmd[1] == "cd" && cmd[2] == ".." {
             in_dirs.pop();
         } else if cmd[0] == "$" && cmd[1] == "cd" {
-            dirsizes.entry(cmd[2]).or_insert(0);
             in_dirs.push(cmd[2]);
-        } else if cmd[0] == "dir" {
-            dirsizes.entry(cmd[1]).or_insert(0);
         } else if let Ok(size) = cmd[0].parse::<u32>() {
-            for dir in in_dirs.iter() {
-                let entry = dirsizes.entry(dir).or_insert(0);
+            for (i, _) in in_dirs.iter().enumerate() {
+                let entry = dirsizes.entry(in_dirs[..i + 1].join("/")).or_insert(0);
                 *entry += size;
             }
         }
-        count += 1;
     }
-
-    println!("{:?}", count);
-    println!("{:?}", in_dirs);
 
     return dirsizes;
 }
@@ -39,12 +32,10 @@ fn main() {
         let rline = line.unwrap();
         lines_str.push(rline);
     }
-    println!("lines: {}", lines_str.len());
     let dirsizes = count_size(&lines_str);
-    println!("{:?}", dirsizes);
     let mut sum = 0;
     for (_, size) in dirsizes.iter() {
-        if *size < 100000 {
+        if *size <= 100000 {
             sum += size;
         }
     }
